@@ -276,11 +276,12 @@ contract Lescovex is LescovexERC20 {
         while (i <= len - 1){
             if (block.number -  holded[msg.sender].time[i] > holdTime){
                 ethAmount += tokenReward * holded[msg.sender].amount[i];
+                holded[msg.sender].time[i] = block.number;
             }
             i++;
         }
 
-        delete holded[msg.sender];
+        //delete holded[msg.sender]; //Not necessary
 
         require(ethAmount > 0);
         //send eth to owner address

@@ -215,7 +215,7 @@ contract Lescovex is LescovexERC20 {
 
 
     /* Initializes contract with initial supply tokens to the creator of the contract */
-    function Lescovex() internal {
+    function Lescovex() public {
         totalSupply = initialSupply;  // Update total supply
         name = tokenName;             // Set the name for display purposes
         symbol = tokenSymbol;         // Set the symbol for display purposes

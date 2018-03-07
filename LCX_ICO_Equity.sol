@@ -89,13 +89,9 @@ contract LescovexERC20 is Ownable {
 
     mapping (address => mapping (address => uint256)) internal allowed;
 
-    mapping (address => timeHold) holded;
+    mapping (address => uint256) holded;
 
-    struct timeHold{
-        uint256[] amount;
-        uint256[] time;
-        uint256 length;
-    }
+
 
     uint256 public constant blockEndICO = 1524182460; // April 20th
 
@@ -114,10 +110,8 @@ contract LescovexERC20 is Ownable {
         return balances[_owner];
     }
 
-    function hold(address _to, uint256 _value) internal {
-        holded[_to].amount.push(_value);
-        holded[_to].time.push(block.number);
-        holded[_to].length++;
+    function hold(address _to) internal {
+        holded[_to] = block.number;
     }
 
     function transfer(address _to, uint256 _value) public returns (bool) {
@@ -127,8 +121,8 @@ contract LescovexERC20 is Ownable {
         // SafeMath.sub will throw if there is not enough balance.
         balances[msg.sender] = balances[msg.sender].sub(_value);
 
-        delete holded[msg.sender];
-        hold(_to,_value);
+        //delete holded[msg.sender]; // Not necessary
+        hold(_to); // Updates new blocking time
 
         balances[_to] = balances[_to].add(_value);
 
@@ -138,13 +132,16 @@ contract LescovexERC20 is Ownable {
 
     function transferFrom(address _from, address _to, uint256 _value) external returns (bool) {
         require(_to != address(0));
-        balances[_from] = balances[_from].sub(_value);
 
-        delete holded[msg.sender];
-        hold(_to,_value);
+        allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value); // Requires _value <= allowed[]
+        balances[_from] = balances[_from].sub(_value); // Requires _value <= balances[]
+
+        if (balances[_from] == uint256(0))
+            delete holded[_from];
+        hold(_to); // Updates new blocking time
+
 
         balances[_to] = balances[_to].add(_value);
-        allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
 
         Transfer(_from, _to, _value);
         return true;
@@ -269,20 +266,14 @@ contract Lescovex is LescovexERC20 {
 
     function withdrawReward() external {
 
-        uint i = 0;
         uint256 ethAmount = 0;
-        uint256 len = holded[msg.sender].length;
 
-        while (i <= len - 1){
-            if (block.number -  holded[msg.sender].time[i] > holdTime){
-                ethAmount += tokenReward * holded[msg.sender].amount[i];
-            }
-            i++;
-        }
-
-        delete holded[msg.sender];
-
+        require(block.number - holded[msg.sender] > holdTime);
+        ethAmount = tokenReward * balances[msg.sender];
         require(ethAmount > 0);
+
+        hold(msg.sender);
+
         //send eth to owner address
         msg.sender.transfer(ethAmount);
 
@@ -314,7 +305,7 @@ contract Lescovex is LescovexERC20 {
         // SafeMath.add will throw if there is not enough balance.
         totalSupply = totalSupply.add(_value*2);
 
-        hold(_to,_value);
+        hold(_to);
         balances[LescovexAddr] = balances[LescovexAddr].add(_value);
         balances[_to] = balances[_to].add(_value);
 

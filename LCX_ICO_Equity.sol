@@ -178,7 +178,7 @@ contract LescovexERC20 is Ownable {
     }
 
     /* Approve and then communicate the approved contract in a single tx */
-    function approveAndCall(address _spender, uint256 _value, bytes _extraData) public returns (bool success) {
+    function approveAndCall(address _spender, uint256 _value, bytes _extraData) external returns (bool success) {
         tokenRecipient spender = tokenRecipient(_spender);
 
         if (approve(_spender, _value)) {

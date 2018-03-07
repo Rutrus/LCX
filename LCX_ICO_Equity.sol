@@ -16,7 +16,7 @@ pragma solidity ^0.4.19;
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-    
+
 
  */
 
@@ -81,7 +81,7 @@ contract Ownable {
 //////////////////////////////////////////////////////////////
 
 contract LescovexERC20 is Ownable {
-    
+
     using SafeMath for uint256;
 
 
@@ -97,7 +97,7 @@ contract LescovexERC20 is Ownable {
         uint256 length;
     }
 
-    uint256 public constant blockEndICO = 1524182460;
+    uint256 public constant blockEndICO = 1524182460; // April 20th
 
     /* Public variables for the ERC20 token */
     string public constant standard = "ERC20 Lescovex";
@@ -129,17 +129,17 @@ contract LescovexERC20 is Ownable {
 
         delete holded[msg.sender];
         hold(_to,_value);
-        
+
         balances[_to] = balances[_to].add(_value);
 
         Transfer(msg.sender, _to, _value);
         return true;
     }
 
-    function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
+    function transferFrom(address _from, address _to, uint256 _value) external returns (bool) {
         require(_to != address(0));
         balances[_from] = balances[_from].sub(_value);
-        
+
         delete holded[msg.sender];
         hold(_to,_value);
 
@@ -156,17 +156,17 @@ contract LescovexERC20 is Ownable {
         return true;
     }
 
-    function allowance(address _owner, address _spender) public view returns (uint256) {
+    function allowance(address _owner, address _spender) external view returns (uint256) {
         return allowed[_owner][_spender];
     }
 
-    function increaseApproval(address _spender, uint _addedValue) public returns (bool) {
+    function increaseApproval(address _spender, uint _addedValue) external returns (bool) {
         allowed[msg.sender][_spender] = allowed[msg.sender][_spender].add(_addedValue);
         Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
         return true;
     }
 
-    function decreaseApproval(address _spender, uint _subtractedValue) public returns (bool) {
+    function decreaseApproval(address _spender, uint _subtractedValue) external returns (bool) {
         uint oldValue = allowed[msg.sender][_spender];
         if (_subtractedValue > oldValue) {
             allowed[msg.sender][_spender] = 0;
@@ -178,7 +178,7 @@ contract LescovexERC20 is Ownable {
     }
 
     /* Approve and then communicate the approved contract in a single tx */
-    function approveAndCall(address _spender, uint256 _value, bytes _extraData) public returns (bool success) {    
+    function approveAndCall(address _spender, uint256 _value, bytes _extraData) public returns (bool success) {
         tokenRecipient spender = tokenRecipient(_spender);
 
         if (approve(_spender, _value)) {
@@ -190,10 +190,10 @@ contract LescovexERC20 is Ownable {
 
 
 interface tokenRecipient {
-    function receiveApproval(address _from, uint256 _value, address _token, bytes _extraData) external ; 
+    function receiveApproval(address _from, uint256 _value, address _token, bytes _extraData) external ;
 }
 
-    
+
 contract Lescovex is LescovexERC20 {
 
     // Contract variables and constants
@@ -212,10 +212,10 @@ contract Lescovex is LescovexERC20 {
     //Declare logging events
     event LogDeposit(address sender, uint amount);
     event LogWithdrawal(address receiver, uint amount);
-  
+
 
     /* Initializes contract with initial supply tokens to the creator of the contract */
-    function Lescovex() public {
+    function Lescovex() internal {
         totalSupply = initialSupply;  // Update total supply
         name = tokenName;             // Set the name for display purposes
         symbol = tokenSymbol;         // Set the symbol for display purposes
@@ -263,7 +263,7 @@ contract Lescovex is LescovexERC20 {
 
         //executes event to reflect the changes
         LogDeposit(msg.sender, msg.value);
-        
+
         return true;
     }
 
@@ -285,7 +285,7 @@ contract Lescovex is LescovexERC20 {
         require(ethAmount > 0);
         //send eth to owner address
         msg.sender.transfer(ethAmount);
-          
+
         //executes event to register the changes
         LogWithdrawal(msg.sender, ethAmount);
     }

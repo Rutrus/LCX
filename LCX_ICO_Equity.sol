@@ -84,16 +84,13 @@ contract LescovexERC20 is Ownable {
 
     using SafeMath for uint256;
 
-
     mapping (address => uint256) public balances;
-
     mapping (address => mapping (address => uint256)) internal allowed;
-
     mapping (address => timeHold) holded;
 
     struct timeHold{
-        uint256[] amount;
-        uint256[] time;
+        uint56[] amount; // Enough amount for maxSupply
+        uint32[] time; // Enough blocks for 1900 years
     }
 
     uint256 public constant blockEndICO = 1524182460;
@@ -108,14 +105,13 @@ contract LescovexERC20 is Ownable {
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
 
-
     function balanceOf(address _owner) public view returns (uint256 balance) {
         return balances[_owner];
     }
 
     function hold(address _to, uint256 _value) internal {
-        holded[_to].amount.push(_value);
-        holded[_to].time.push(block.number);
+        holded[_to].amount.push(uint56(_value));
+        holded[_to].time.push(uint32(block.number));
     }
 
     function transfer(address _to, uint256 _value) external returns (bool) {
@@ -146,17 +142,17 @@ contract LescovexERC20 is Ownable {
         return true;
     }
 
-    function allowance(address _owner, address _spender) public view returns (uint256) {
+    function allowance(address _owner, address _spender) external view returns (uint256) {
         return allowed[_owner][_spender];
     }
 
-    function increaseApproval(address _spender, uint _addedValue) public returns (bool) {
+    function increaseApproval(address _spender, uint _addedValue) external returns (bool) {
         allowed[msg.sender][_spender] = allowed[msg.sender][_spender].add(_addedValue);
         emit Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
         return true;
     }
 
-    function decreaseApproval(address _spender, uint _subtractedValue) public returns (bool) {
+    function decreaseApproval(address _spender, uint _subtractedValue) external returns (bool) {
         uint oldValue = allowed[msg.sender][_spender];
         if (_subtractedValue > oldValue) {
             allowed[msg.sender][_spender] = 0;
@@ -168,7 +164,7 @@ contract LescovexERC20 is Ownable {
     }
 
     /* Approve and then communicate the approved contract in a single tx */
-    function approveAndCall(address _spender, uint256 _value, bytes _extraData) public returns (bool success) {
+    function approveAndCall(address _spender, uint256 _value, bytes _extraData) external returns (bool success) {
         tokenRecipient spender = tokenRecipient(_spender);
 
         if (approve(_spender, _value)) {
@@ -246,8 +242,6 @@ contract Lescovex is LescovexERC20 {
     }
 
     function deposit() external payable onlyOwner returns(bool success) {
-        // Check for overflows;
-
         assert (address(this).balance + msg.value >= address(this).balance); // Check for overflows
         tokenReward = address(this).balance / totalSupply;
 
@@ -258,7 +252,6 @@ contract Lescovex is LescovexERC20 {
     }
 
     function withdrawReward() external {
-
         uint i = 0;
         uint256 ethAmount = 0;
         uint256 len = holded[msg.sender].amount.length;
@@ -266,7 +259,7 @@ contract Lescovex is LescovexERC20 {
         while (i <= len - 1){
             if (block.number -  holded[msg.sender].time[i] > holdTime){
                 ethAmount += tokenReward * holded[msg.sender].amount[i];
-                holded[msg.sender].time[i] = block.number;
+                holded[msg.sender].time[i] = uint32(block.number);
             }
             i++;
         }
@@ -316,5 +309,4 @@ contract Lescovex is LescovexERC20 {
         totalSupply = totalSupply.sub(balances[addr]);
         balances[addr] = 0;
     }
-
 }

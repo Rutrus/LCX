@@ -114,6 +114,38 @@ contract LescovexERC20 is Ownable {
         holded[_to].time.push(uint32(block.number));
     }
 
+    /* subtractHold subtracts a value in holded[_owner] mantaining its time */
+    function subtractHold(address _from, uint256 _value) internal returns (bool) {
+        uint256 totalHolded;
+        uint256 amount;
+        uint256 len = holded[_from].amount.length;
+        uint256 rest = _value;
+        assert(len);
+
+        if (len == 1) {
+          totalHolded = holded[_from].amount[0];
+          holded[_from].amount[0] = totalHolded.sub(_value);
+          holded[_from].time[0] = block.number;
+        } else {
+            for (int i = len-1; i >= 0, i--) {
+                amount = holded[_from].amount[i];
+                totalHolded += amount;
+                if (rest) {
+                    if (amount > rest) {
+                        holded[_from].amount[i] = amount.sub(rest);
+                        rest = 0;
+                    } else {
+                        delete holded[_from].amount[i];
+                        delete holded[_from].time[i];
+                        rest -= amount;
+                    }
+                }
+            }
+        }
+        assert(balances[_from] == totalHolded);
+        return true;
+    }
+
     function transfer(address _to, uint256 _value) external returns (bool) {
         return transferFrom(msg.sender, _to, _value);
     }

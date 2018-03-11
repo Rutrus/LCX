@@ -124,7 +124,8 @@ contract LescovexERC20 is Ownable {
 
         // SafeMath.sub will throw if there is not enough balance.
         balances[_from] = balances[_from].sub(_value);
-        allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
+        if (_from != msg.sender)
+            allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
 
         delete holded[_from];
         hold(_from,balances[_from]);

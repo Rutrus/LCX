@@ -28,97 +28,100 @@ pragma solidity ^0.4.20;
 //                                                          //
 //////////////////////////////////////////////////////////////
 
-contract LCX_Certificates_x509 {
+contract Ownable {
+    address public owner;
+
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
+    function Ownable() internal {
+        owner = msg.sender;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner);
+        _;
+    }
+
+    function transferOwnership(address newOwner) public onlyOwner {
+        require(newOwner != address(0));
+        OwnershipTransferred(owner, newOwner);
+        owner = newOwner;
+    }
+}
+
+contract LCX_Certificates_x509 is Ownable{
     
 
+    mapping (uint256 => CA) certificateAuthority;
+    mapping (address => Entity) entities;
+    mapping (address => mapping (address => Signature)) Signatures;
+    mapping (address => ownerSignatures) OwnerSignatures;
 
-    mapping (address => mapping (address => Cert)) Certificates;
+   struct CA{
+        string issuer;
+        string certificate;
+    }
 
-    mapping (address => ownerCerts) OwnerCertificates;
-
-    struct Cert{
-        
-        string certIssuer;
-        string certAltNames;
-        string certSubject;
-        string signature;
-        string fingerprint;
+    struct Entity{
         string publicKey;
-        
-    }
-
-    struct ownerCerts{
-        
-        address[] contractAddr;
-        string[] certIssuer;
-        string[] certAltNames;
-        string[] certSubject;
-        string[] fingerprint;
-        string[] publicKey;
-        string[] signature;
-        uint256 lenght;
-    }
-
-    event AddCertificate(address owner,string issuer,string altnames, string subject,address contractAddress, string signature);
-
-
-    function addCertificate(string issuer,string altnames, string subject,address contractAddr, string signature, string fingerprint, string pubkey) public {
+        string signature;
       
-        uint256 n = OwnerCertificates[msg.sender].lenght;
+    }
 
-        Certificates[contractAddr][msg.sender].certIssuer=issuer;
-        Certificates[contractAddr][msg.sender].certAltNames=altnames;
-        Certificates[contractAddr][msg.sender].certSubject=subject;
-        Certificates[contractAddr][msg.sender].fingerprint=fingerprint;
-        Certificates[contractAddr][msg.sender].publicKey=pubkey;
-        Certificates[contractAddr][msg.sender].signature=signature;
+    struct Signature{
+       
+        string certificate;
+        string signature;
+    }
+
+    struct ownerSignatures{
+        address contractAddress;
+      
+    }
+
+    event AddCA(address owner ,address contractAddress, string certificate);
+    event AddEntity(address owner, string publicKey ,string signature);
+    event AddSignature(address contractAddr, address owner, string certificate, string signature);
+
+
+    function addCA(string issuer, uint256 fingerprint, string certificate) public onlyOwner{
         
-        OwnerCertificates[msg.sender].contractAddr[n]=contractAddr;
-        OwnerCertificates[msg.sender].certIssuer[n]=issuer;
-        OwnerCertificates[msg.sender].certAltNames[n]=altnames;
-        OwnerCertificates[msg.sender].certSubject[n]=subject;
-        OwnerCertificates[msg.sender].fingerprint[n]=fingerprint;
-        OwnerCertificates[msg.sender].publicKey[n]=pubkey;
-        OwnerCertificates[msg.sender].signature[n]=signature;        
-        OwnerCertificates[msg.sender].lenght++;
+        certificateAuthority[fingerprint].issuer=issuer;
+        certificateAuthority[fingerprint].certificate=certificate;
 
-        AddCertificate(msg.sender, issuer, altnames, subject,contractAddr, signature);
-    
+    }
+
+    function addEntity(address addr,string entity, string signature) public {
+       
+        entities[addr].publicKey=entity;
+        entities[addr].signature=signature;
+       
+    }
+
+    function addSignature(address addr,string signature, address contractAddr, string certificate) public {
+      
+        
+        Signatures[contractAddr][addr].certificate=certificate;
+        Signatures[contractAddr][addr].signature=signature;
+        OwnerSignatures[addr].contractAddress=contractAddr;
+
     }
     
    
-    function getCertificate(address contractAddr, address owner) public view returns(string,string,string,string,string,string) {
-        return (Certificates[contractAddr][owner].certIssuer,Certificates[contractAddr][owner].certAltNames, Certificates[contractAddr][owner].certSubject,Certificates[contractAddr][owner].fingerprint, Certificates[contractAddr][owner].publicKey, Certificates[contractAddr][owner].signature);
+    function getSignature(address contractAddr, address owner) public view returns(string,string) {
+        return (Signatures[contractAddr][owner].certificate, Signatures[contractAddr][owner].signature);
     }
 
-//    function getOwnerCertificates(address _of, uint256 n) public returns (address,string,string,string,string,string,string){
-//        return (OwnerCertificates[_of].contractAddr[n],OwnerCertificates[_of].certIssuer[n],OwnerCertificates[_of].certAltNames[n],OwnerCertificates[_of].certSubject[n],OwnerCertificates[_of].fingerprint[n],OwnerCertificates[_of].publicKey[n],OwnerCertificates[_of].signature[n]);
-//    }
+    function getOwnerSignature(address _of) public view returns(address) { 
+        return (OwnerSignatures[_of].contractAddress);
+    }
+
+    function getEntity(address addr) public view returns(string) {
+        return entities[addr].publicKey;
+    }
 
 
 
-
-/*
-    Copyright 2016, Adrià Massanet
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-    
-    Checked results with FIPS test vectors
-    https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/dss/186-3rsatestvectors.zip
-    file SigVer15_186-3.rsp
-    
- */
 
 
 
@@ -173,6 +176,8 @@ contract LCX_Certificates_x509 {
 
         return input;
     }
+
+
 
     function pkcs1Sha256Verify(bytes32 hash, bytes s, bytes e, bytes m) public returns (uint){
         uint i;

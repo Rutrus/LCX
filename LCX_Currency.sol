@@ -97,19 +97,15 @@ contract LescovexERC20 is Ownable {
     }
 
     function transfer(address _to, uint256 _value) external returns (bool) {
-        require(_to != address(0));
-        // SafeMath.sub will throw if there is not enough balance.
-        balances[msg.sender] = balances[msg.sender].sub(_value);
-
-        balances[_to] = balances[_to].add(_value);
-        emit Transfer(msg.sender, _to, _value);
-        return true;
+        return transferFrom(msg.sender, _to, _value);
     }
 
-    function transferFrom(address _from, address _to, uint256 _value) external returns (bool) {
+    function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
         require(_to != address(0));
+        // SafeMath.sub will throw if there is not enough balance.
         balances[_from] = balances[_from].sub(_value);
-        allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
+        if (_from != msg.sender)
+            allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_value);
 
         balances[_to] = balances[_to].add(_value);
         emit Transfer(_from, _to, _value);

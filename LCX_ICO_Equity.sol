@@ -285,8 +285,13 @@ contract Lescovex is LescovexERC20 {
             i++;
         }
 
+<<<<<<< HEAD
         delete holded[msg.sender];
         hold(msg.sender,balances[msg.sender]);
+=======
+        //delete holded[msg.sender]; //Not necessary
+
+>>>>>>> 667a613efe0a4186e4c9efa19f94de746b5d4bda
         require(ethAmount > 0);
         //send eth to owner address
         msg.sender.transfer(ethAmount);

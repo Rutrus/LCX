@@ -96,7 +96,7 @@ contract LescovexERC20 is Ownable {
         uint256 length;
     }
 
-    uint256 public constant blockEndICO = 1524182460;
+    
 
     /* Public variables for the ERC20 token */
     string public constant standard = "ERC20 Lescovex";
@@ -120,13 +120,14 @@ contract LescovexERC20 is Ownable {
     }
 
     function transfer(address _to, uint256 _value) public returns (bool) {
-        require(block.timestamp > blockEndICO || msg.sender == owner);
+       
         require(_to != address(0));
-
+        require(_value <= balances[msg.sender]);
         // SafeMath.sub will throw if there is not enough balance.
         balances[msg.sender] = balances[msg.sender].sub(_value);
 
         delete holded[msg.sender];
+        hold(msg.sender,balances[msg.sender]);
         hold(_to,_value);
         
         balances[_to] = balances[_to].add(_value);
@@ -137,9 +138,12 @@ contract LescovexERC20 is Ownable {
 
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
         require(_to != address(0));
+        require(_value <= balances[_from]);
+        require(_value <= allowed[_from][msg.sender]);       
         balances[_from] = balances[_from].sub(_value);
         
         delete holded[msg.sender];
+        hold(msg.sender,balances[_from]);
         hold(_to,_value);
 
         balances[_to] = balances[_to].add(_value);
@@ -196,13 +200,12 @@ interface tokenRecipient {
 contract Lescovex is LescovexERC20 {
 
     // Contract variables and constants
-    uint256 constant initialSupply = 0;
-    uint256 constant maxSupply = 1000000000000000;
+    uint256 constant initialSupply = 1000000000000000;
     string constant tokenName = "Lescovex Shareholder's";
     string constant tokenSymbol = "LCX";
     uint256 constant holdTime = 5; // number of blocks required to hold for reward
 
-    address public LescovexAddr = 0xD26286eb9E6E623dba88Ed504b628F648ADF7a0E;
+   
     uint256 public tokenReward = 0;
     // constant to simplify conversion of token amounts into integer form
     uint256 public tokenUnit = uint256(10)**decimals;
@@ -218,7 +221,7 @@ contract Lescovex is LescovexERC20 {
         totalSupply = initialSupply;  // Update total supply
         name = tokenName;             // Set the name for display purposes
         symbol = tokenSymbol;         // Set the symbol for display purposes
-        balances[LescovexAddr]= balances[LescovexAddr].add(totalSupply);
+        balances[msg.sender]= balances[msg.sender].add(totalSupply);
 
     }
 
@@ -253,7 +256,7 @@ contract Lescovex is LescovexERC20 {
         }
 
         delete holded[msg.sender];
-
+        hold(msg.sender,balances[msg.sender]);
         require(ethAmount > 0);
         //send eth to owner address
         msg.sender.transfer(ethAmount);
